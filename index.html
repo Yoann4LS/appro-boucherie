@@ -21,8 +21,9 @@
     <h1>Aide à l'approvisionnement local des clients BVB</h1>
     <h2>Boucherie sélectionnée:</h2>
     <p id="boucherie_selectionnee">Pas de boucherie sélectionnée</p>
-    <button id="bouton_selection" type="button" class="btn btn-success" style="margin-bottom: 20px;">Success</button>
-
+    <button id="50km" type="button" class="btn btn-success" style="margin-bottom: 20px;">50km</button>
+    <button id="100km" type="button" class="btn btn-success" style="margin-bottom: 20px;">100km</button>
+    <button id="affichertout" type="button" class="btn btn-success" style="margin-bottom: 20px;">Afficher tout</button>
 
     <table class="table">
       <thead class="thead-dark">
@@ -30,121 +31,191 @@
           <th scope="col">TYPE</th>
           <th scope="col">NOM</th>
           <th scope="col">VILLE</th>
-         
+          <th scope="col">Distance</th>
         </tr>
       </thead>
       <tbody id="my-tbody">
-        <tr id="selection_boucherie">
-          <td scope="col">Boucherie</td>
-          <td scope="col">Gabi</td>
-          <td scope="col">Loudia</td>
-        </tr>
-        <tr>
-          <td scope="col">Eleveur</td>
-          <td scope="col">YO</td>
-          <td scope="col">saint ca</td>
-        </tr>
-        <tr>
-          <td scope="col">Eleveur</td>
-          <td scope="col">YO2</td>
-          <td scope="col">saint ca2</td>
-        </tr>
-        <tr>
-          <td scope="col">Eleveur</td>
-          <td scope="col">YO3</td>
-          <td scope="col">saint ca3</td>
-        </tr>
       </tbody>
-    </table>
+</table>
 
     <!-- Optional JavaScript -->
     <!-- jQuery first, then Popper.js, then Bootstrap JS -->
-    <script
-      src="https://code.jquery.com/jquery-3.4.1.slim.min.js"
-      integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n"
-      crossorigin="anonymous"
-    ></script>
-    <script
-      src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js"
-      integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo"
-      crossorigin="anonymous"
-    ></script>
-    <script
-      src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js"
-      integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6"
-      crossorigin="anonymous"
-    ></script>
+<script
+        src="https://code.jquery.com/jquery-3.4.1.min.js"
+        integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo="
+        crossorigin="anonymous"></script>
+<script
+    src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js"
+    integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo"
+    crossorigin="anonymous"
+></script>
+<script
+    src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js"
+    integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6"
+    crossorigin="anonymous"
+></script>
 
-    <script>
-      var response = '[{"rank":"9","content":"Alon","UID":"5"},{"rank":"6","content":"Tala","UID":"6"}]';
+<script>
+    var response = '[{"rank":"9","content":"Alon","UID":"5"},{"rank":"6","content":"Tala","UID":"6"}]';
 
-      // $('#bouton_selection').click( () => 
-      //   $('#boucherie_selectionnee').text('boucherie de magnan')
-      // );
-      // $('#selection_boucherie').click( () =>
-      //   $('#boucherie_selectionnee').text('Loudia'));
+    // $('#bouton_selection').click( () =>
+    //   $('#boucherie_selectionnee').text('boucherie de magnan')
+    // );
+    // $('#selection_boucherie').click( () =>
+    //   $('#boucherie_selectionnee').text('Loudia'));
+    function distance(lat1, lon1, lat2, lon2, unit) {
+    if ((lat1 == lat2) && (lon1 == lon2)) {
+        return 0;
+    }
+    else {
+        var radlat1 = Math.PI * lat1/180;
+        var radlat2 = Math.PI * lat2/180;
+        var theta = lon1-lon2;
+        var radtheta = Math.PI * theta/180;
+        var dist = Math.sin(radlat1) * Math.sin(radlat2) + Math.cos(radlat1) * Math.cos(radlat2) * Math.cos(radtheta);
+        if (dist > 1) {
+            dist = 1;
+        }
+        dist = Math.acos(dist);
+        dist = dist * 180/Math.PI;
+        dist = dist * 60 * 1.1515;
+        if (unit=="K") { dist = dist * 1.609344 }
+        if (unit=="N") { dist = dist * 0.8684 }
+        return dist;
+    }
+}
 
 
+function tsvJSON(tsv) {
+    const lines = tsv.split('\n');
+    const headers = lines.slice(0, 1)[0].split('\t');
+    return lines.slice(1, lines.length).map(line => {
+        const data = line.split('\t');
+        return headers.reduce((obj, nextKey, index) => {
+        obj[nextKey] = data[index];
+        return obj;
+        }, {});
+    });
+    }
 
-      $('#my-tbody').children().each( function(index, ligne){
-        console.log(index, ligne);
-        
+function ajouter_ligne(item, distance = '') {
+    if (distance !=='') {
+        distance = distance.toFixed(0) + " km";
+    }
+
+var $tr = $('<tr>').append(
+            $('<td>').text(item.CATEGORIE),
+            $('<td>').text(item.Nom),
+            $('<td>').text(item['Full Address']),
+            $('<td>').text(distance)
+    ); //.appendTo('#records_table');
+    $('#my-tbody').append($tr);
+}
+
+let entreprises = null;
+let boucherieSelectionnee = null;
+
+
+function ajouter_les_click() {
+    $('#my-tbody').children().each( function(index, ligne){
         var ville = null;
 
         $( ligne ).children().each( function (index2, colonne) {
-          console.log(index2, colonne);
-          if (index2 == 2) {
+        if (index2 == 2) {
             ville = $(colonne).text();
-            console.log($(colonne).text())
-          }
+        }
         });
 
-        $( ligne ).click( () => 
-          $('#boucherie_selectionnee').text(ville)
+        $( ligne ).click( () => {
+            $('#boucherie_selectionnee').text(ville);
+            $('#my-tbody').empty();
+            boucherieSelectionnee = entreprises[index + 1]; 
+
+            $.each(entreprises, function(i, item) {
+                // On enlève la première ligne qui n'est pas des boucheries
+                if (i==0){
+                return;
+                }
+                
+                var KM = distance(parseFloat(item.Latitude), Object.values(item)[6], 
+                    parseFloat(boucherieSelectionnee.Latitude), Object.values(boucherieSelectionnee)[6], 'K');
+                
+                if (item.CATEGORIE !== "BOUCHERIE" && KM <100) {
+                    ajouter_ligne(item, KM);
+
+                    }
+            });
+        }
+
         );
-      }
-      );
-
-
-      // convert string to JSON
-      // response = $.parseJSON(response);
-
-      // $(function() {
-      //     $.each(response, function(i, item) {
-      //         var $tr = $('<tr>').append(
-      //             $('<td>').text(item.rank),
-      //             $('<td>').text(item.rank),
-      //             $('<td>').text(item.content),
-      //             $('<td>').text(item.UID)
-      //         ); //.appendTo('#records_table');
-      //       console.log($tr);
-      //       $('#my-tbody').append($tr);
-      //     });
-      // });
-  function distance(lat1, lon1, lat2, lon2, unit) {
-	if ((lat1 == lat2) && (lon1 == lon2)) {
-		return 0;
-	}
-	else {
-		var radlat1 = Math.PI * lat1/180;
-		var radlat2 = Math.PI * lat2/180;
-		var theta = lon1-lon2;
-		var radtheta = Math.PI * theta/180;
-		var dist = Math.sin(radlat1) * Math.sin(radlat2) + Math.cos(radlat1) * Math.cos(radlat2) * Math.cos(radtheta);
-		if (dist > 1) {
-			dist = 1;
-		}
-		dist = Math.acos(dist);
-		dist = dist * 180/Math.PI;
-		dist = dist * 60 * 1.1515;
-		if (unit=="K") { dist = dist * 1.609344 }
-		if (unit=="N") { dist = dist * 0.8684 }
-		return dist;
-	}
+        }
+    );
 }
 
-var KM = distance(48.19403130000001,-2.2706287, 48.235447, -3.318145, 'K')
-console.log(KM)
-    </script>
+function depart() {
+    $('#my-tbody').empty();
+    $.each(entreprises, function(i, item) {
+        // On enlève la première ligne qui n'est pas des boucheries
+        if (i==0){
+            return;
+        }
+              
+        if (item.CATEGORIE === "BOUCHERIE") {
+            ajouter_ligne(item);         
+        }
+    });
+    ajouter_les_click();
+}
+
+
+$.ajax({
+    url: "https://docs.google.com/spreadsheets/d/e/2PACX-1vQhetfBpn5Xj_W-HucyhGOOr4iVyhZK2tcc_h02ZGb6t0yWEZl1iSpW-bI1jbUbujdr3eH5l-V38LOo/pub?gid=0&single=true&output=tsv",
+    type: "GET",
+    success: function(data) {
+        entreprises = tsvJSON(data);
+        depart();
+    }
+});
+
+$('#50km').click( () => {
+    $('#my-tbody').empty();
+        $.each(entreprises, function(i, item) {
+            // On enlève la première ligne qui n'est pas des boucheries
+            if (i==0){
+            return;
+            }
+            
+            var KM = distance(parseFloat(item.Latitude), Object.values(item)[6], 
+                parseFloat(boucherieSelectionnee.Latitude), Object.values(boucherieSelectionnee)[6], 'K');
+            
+            if (item.CATEGORIE !== "BOUCHERIE" && KM <50) {
+                ajouter_ligne(item, KM);         
+            }
+        });
+})
+
+$('#100km').click( () => {
+    $('#my-tbody').empty();
+        $.each(entreprises, function(i, item) {
+            // On enlève la première ligne qui n'est pas des boucheries
+            if (i==0){
+            return;
+            }
+            
+            var KM = distance(parseFloat(item.Latitude), Object.values(item)[6], 
+                parseFloat(boucherieSelectionnee.Latitude), Object.values(boucherieSelectionnee)[6], 'K');
+            
+            if (item.CATEGORIE !== "BOUCHERIE" && KM <100) {
+                ajouter_ligne(item, KM);         
+            }
+        });
+})
+
+
+$('#affichertout').click( () => {
+    depart();
+})
+
+</script>
   </body>
 </html>
